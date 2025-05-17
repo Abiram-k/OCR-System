@@ -1,67 +1,82 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FileText, AlertCircle } from "lucide-react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import ImageUploader from "@/components/image-uploader"
-import OcrResults from "@/components/ocr-result"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileText, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import ImageUploader from "@/components/image-uploader";
+import OcrResults from "@/components/ocr-result";
+import useProcessAdhaar from "@/utils/useProcessAdhaar";
+import { toast } from "sonner";
 
 export default function Home() {
-  const [frontImage, setFrontImage] = useState<string | null>(null)
-  const [backImage, setBackImage] = useState<string | null>(null)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [ocrResults, setOcrResults] = useState<any | null>(null)
-  const [activeTab, setActiveTab] = useState("upload")
+  const [frontImage, setFrontImage] = useState<string | null>(null);
+  const [backImage, setBackImage] = useState<string | null>(null);
 
-  const handleFrontImageUpload = (imageUrl: string) => {
-    setFrontImage(imageUrl)
-  }
+  const [frontImageFile, setFrontImageFile] = useState<File | null>(null);
+  const [backImageFile, setBackImageFile] = useState<File | null>(null);
 
-  const handleBackImageUpload = (imageUrl: string) => {
-    setBackImage(imageUrl)
-  }
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [ocrResults, setOcrResults] = useState<any | null>(null);
+  const [activeTab, setActiveTab] = useState("upload");
 
-  const processOcr = () => {
-    if (!frontImage || !backImage) {
-      return
-    }
+  const handleFrontImageUpload = (imageUrl: string, file: File | null) => {
+    setFrontImage(imageUrl);
+    setFrontImageFile(file);
+  };
 
-    setIsProcessing(true)
+  const handleBackImageUpload = (imageUrl: string, file: File | null) => {
+    setBackImage(imageUrl);
+    setBackImageFile(file);
+  };
 
-    setTimeout(() => {
-      const mockResults = {
-        name: "Rahul Kumar Singh",
-        dob: "15/08/1990",
-        gender: "Male",
-        aadhaarNumber: "XXXX XXXX 1234",
-        address: "123, Example Street, Example City, Example State - 123456",
-        fatherName: "Suresh Kumar Singh",
-        issueDate: "01/01/2020",
+  const processOcr = async () => {
+    try {
+      setIsProcessing(true);
+      if (!frontImage || !backImage || !frontImageFile || !backImageFile) {
+        toast.warning("Upload image before processing...");
+        return;
       }
+      const result = await useProcessAdhaar(frontImageFile, backImageFile);
+      console.log("Result after processing: ",result)
+      setOcrResults(result);
+      setActiveTab("results");
+    } catch (error) {
+      console.log("Error while proccessing: ", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
-      setOcrResults(mockResults)
-      setIsProcessing(false)
-      setActiveTab("results")
-    }, 2000)
-  }
-
-  const canProcess = frontImage && backImage
+  const canProcess = frontImage && backImage;
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-4 md:p-24">
       <div className="w-full max-w-4xl">
         <Card className="w-full">
           <CardHeader>
-            <CardTitle className="text-2xl text-center">Aadhaar Card OCR</CardTitle>
+            <CardTitle className="text-2xl text-center">
+              Aadhaar Card OCR
+            </CardTitle>
             <CardDescription className="text-center">
-              Upload front and back sides of your Aadhaar card for information extraction
+              Upload front and back sides of your Aadhaar card for information
+              extraction
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="upload">Upload Images</TabsTrigger>
                 <TabsTrigger value="results" disabled={!ocrResults}>
@@ -93,12 +108,17 @@ export default function Home() {
                         <AlertCircle className="h-4 w-4" />
                         <AlertTitle>Missing images</AlertTitle>
                         <AlertDescription>
-                          Please upload both front and back sides of the Aadhaar card.
+                          Please upload both front and back sides of the Aadhaar
+                          card.
                         </AlertDescription>
                       </Alert>
                     )}
 
-                    <Button onClick={processOcr} disabled={!canProcess || isProcessing} className="w-full max-w-xs">
+                    <Button
+                      onClick={processOcr}
+                      disabled={!canProcess || isProcessing}
+                      className="w-full max-w-xs"
+                    >
                       {isProcessing ? (
                         <>Processing...</>
                       ) : (
@@ -113,9 +133,19 @@ export default function Home() {
               </TabsContent>
 
               <TabsContent value="results" className="space-y-6 mt-6">
-                {ocrResults && <OcrResults results={ocrResults} frontImage={frontImage!} backImage={backImage!} />}
+                {ocrResults && (
+                  <OcrResults
+                    results={ocrResults}
+                    frontImage={frontImage!}
+                    backImage={backImage!}
+                  />
+                )}
 
-                <Button variant="outline" onClick={() => setActiveTab("upload")} className="w-full">
+                <Button
+                  variant="outline"
+                  onClick={() => setActiveTab("upload")}
+                  className="w-full"
+                >
                   Back to Upload
                 </Button>
               </TabsContent>
@@ -124,5 +154,5 @@ export default function Home() {
         </Card>
       </div>
     </main>
-  )
+  );
 }
