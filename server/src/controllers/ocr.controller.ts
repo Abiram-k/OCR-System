@@ -3,11 +3,25 @@ import { Request, Response } from "express";
 import { config } from "dotenv";
 import { parseBackText, parseFrontText } from "../utils/extractDetails.js";
 import { isValidAadhaarOCRText } from "../utils/isValidAadhaarOCRText.js";
+import fs from "fs";
 config();
+const path = "./src/config/adhaar-ocr-460118-cbcdd2cbb768.json";
 
-const client = new vision.ImageAnnotatorClient();
+// const raw = fs.readFileSync("./src/config/adhaar-ocr-460118-cbcdd2cbb768.json", "utf8");
+// const escaped = JSON.stringify(JSON.parse(raw));
+// console.log(escaped);
+
+const jsonEscapedString = process.env.GOOGLE_APPLICATION_CREDENTIALS!;
+const jsonParsed = JSON.parse(jsonEscapedString); // Now it's a real object
+fs.writeFileSync(path, JSON.stringify(jsonParsed)); 
+
+// fs.writeFileSync(path, process.env.GOOGLE_APPLICATION_CREDENTIALS!); 
+
+const client = new vision.ImageAnnotatorClient({
+  keyFilename: path,
+});
 async function performOCR(imageBuffer: Buffer) {
-  const [result] = await client.documentTextDetection({
+  const [result] = await client.documentTextDetection({  
     image: { content: imageBuffer },
   });
   return result.fullTextAnnotation?.text;
