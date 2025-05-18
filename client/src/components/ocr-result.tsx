@@ -25,7 +25,7 @@ export default function OcrResults({
   return (
     <div className="space-y-6">
       <div
-        className={`bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-4 flex items-center ${
+        className={`bg-green-200 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-4 flex items-center ${
           darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"
         }`}
       >
@@ -96,7 +96,9 @@ function InfoItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="space-y-1">
       <h3 className="text-sm font-medium text-white">{label}</h3>
-      <p className="text-sm p-3  rounded-md bg-gray-300 text-black">{value}</p>
+      <p className="text-sm p-3  rounded-md bg-gray-300  text-black ">
+        {value}
+      </p>
     </div>
   );
 }
