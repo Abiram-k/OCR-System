@@ -9,7 +9,7 @@ const Home = lazy(() => import("./page/Home"));
 function App() {
   return (
     <>
-      <Toaster  position="bottom-right" />
+      <Toaster richColors  position="bottom-right" />
       <Router>
         <Suspense fallback={<LoadingScreen />}>
           <Routes>

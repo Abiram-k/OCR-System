@@ -1,214 +1,105 @@
-// function normalizeOCRText(text: string): string {
-//   return text
-//     .toLowerCase()
-//     .replace(/[\r\n]+/g, " ")
-//     .replace(/\s+/g, " ")
-//     .replace(/[^a-z0-9\s:\/\-\.,]/g, "")
-//     .trim();
-// }
-
-// function extractValueAfterKeyword(text: string, keyword: string): string {
-//   const index = text.indexOf(keyword.toLowerCase());
-//   if (index === -1) return "";
-
-//   const substr = text.substring(index + keyword.length).trim();
-
-//   const value = substr.split(" ").slice(0, 6).join(" ");
-
-//   return value.replace(/^[:\-\s]+/, "").trim();
-// }
-
-// function extractAadhaarNumber(text: string): string {
-//   const match = text.match(/\b(\d{4}\s?\d{4}\s?\d{4})\b/);
-//   return match ? match[1].replace(/\s/g, "") : "";
-// }
-
-// export function extractFrontDetails(rawText: string) {
-//   const text = normalizeOCRText(rawText);
-
-//   const aadhaarNumber = extractAadhaarNumber(text);
-
-//   const gender = text.includes("male")
-//     ? "Male"
-//     : text.includes("female")
-//     ? "Female"
-//     : "";
-
-//   const dob =
-//     extractValueAfterKeyword(text, "dob") ||
-//     extractValueAfterKeyword(text, "year of birth");
-
-//   const fatherOrHusbandName =
-//     extractValueAfterKeyword(text, "s/o") ||
-//     extractValueAfterKeyword(text, "d/o") ||
-//     extractValueAfterKeyword(text, "w/o") ||
-//     extractValueAfterKeyword(text, "son of") ||
-//     extractValueAfterKeyword(text, "daughter of") ||
-//     extractValueAfterKeyword(text, "wife of") ||
-//     "";
-
-//   const nameCandidates = text.split(" ");
-//   const genderIndex = nameCandidates.findIndex(
-//     (w) => w === "male" || w === "female"
-//   );
-//   const name =
-//     genderIndex > 1
-//       ? nameCandidates.slice(genderIndex - 2, genderIndex).join(" ")
-//       : "";
-
-//   return { aadhaarNumber, name, gender, dob, fatherOrHusbandName, rawText };
-// }
-
-// export function extractBackDetails(rawText: string) {
-//   const text = normalizeOCRText(rawText);
-
-//   const careOf = extractValueAfterKeyword(text, "c/o");
-//   const house = extractValueAfterKeyword(text, "house");
-//   const street = extractValueAfterKeyword(text, "street");
-//   const landmark = extractValueAfterKeyword(text, "landmark");
-//   const locality = extractValueAfterKeyword(text, "locality");
-//   const vtc = extractValueAfterKeyword(text, "village/town/city");
-//   const po = extractValueAfterKeyword(text, "post office");
-//   const district = extractValueAfterKeyword(text, "district");
-//   const state = extractValueAfterKeyword(text, "state");
-//   const pinCode =
-//     extractValueAfterKeyword(text, "pin") ||
-//     extractValueAfterKeyword(text, "pincode");
-
-//   const address = {
-//     careOf,
-//     house,
-//     street,
-//     landmark,
-//     locality,
-//     vtc,
-//     po,
-//     district,
-//     state,
-//     pinCode,
-//   };
-
-//   return { address, rawText };
-// }
 
 
 
-function normalizeOCRText(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[\r\n]+/g, " ")
-    .replace(/\s+/g, " ")
-    .replace(/[^a-z0-9\s:\/\-\.,]/g, "")
-    .trim();
-}
+export const parseFrontText = (text: string) => {
+  const fields: any = {};
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
 
+    if (/Government of India/.test(line)) continue;
+    if (/^[A-Za-z\s]{3,}$/.test(line) && !fields.name) {
+      const nextLine = lines[i + 1] || "";
+      if (/DOB|Date|जन्म/.test(nextLine)) {
+        fields.name = line;
+      }
+    }
+    const hasHindi = lines.some((l) => /[\u0900-\u097F]/.test(l));
+    const hasEnglish = lines.some((l) => /[A-Za-z]/.test(l));
+    fields.language =
+      hasHindi && hasEnglish
+        ? "Hindi + English"
+        : hasEnglish
+        ? "English"
+        : "Hindi";
 
-function extractValueAfterKeyword(text: string, keywords: string[]): string {
-  for (const keyword of keywords) {
-    const index = text.indexOf(keyword.toLowerCase());
-    if (index !== -1) {
-      const substr = text.substring(index + keyword.length).trim();
-      const value = substr.split(" ").slice(0, 8).join(" "); // Increased word limit for address fields
-      return value.replace(/^[:\-\s]+/, "").trim();
+    if (
+      !fields.issueDate &&
+      /(Issued|Printed|प्रिंट).*(\d{2}\/\d{2}\/\d{4})/.test(line)
+    ) {
+      const match = line.match(/(\d{2}\/\d{2}\/\d{4})/);
+      if (match) {
+        fields.issueDate = match[1];
+      }
+    }
+    if (!fields.dob && /DOB|Date|जन्म/.test(line)) {
+      const match = line.match(/(\d{2}\/\d{2}\/\d{4})/);
+      if (match) {
+        fields.dob = match[1];
+      }
+    }
+    if (!fields.gender && /(Male|Female|पुरुष|महिला)/i.test(line)) {
+      if (/Male|पुरुष/i.test(line)) fields.gender = "Male";
+      if (/Female|महिला/i.test(line)) fields.gender = "Female";
+    }
+    if (!fields.aadhaarNumber && /^\d{4}\s\d{4}\s\d{4}$/.test(line)) {
+      fields.aadhaarNumber = line;
     }
   }
-  return "";
+
+  return fields;
 }
 
-function extractAadhaarNumber(text: string): string {
-  const match = text.match(/\b(\d{4}\s?\d{4}\s?\d{4})\b/);
-  return match ? match[1].replace(/\s/g, "") : "";
-}
 
-export function extractFrontDetails(rawText: string) {
-  const text = normalizeOCRText(rawText);
+export const parseBackText = (text: string) =>  {
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 
-  const aadhaarNumber = extractAadhaarNumber(text);
+  const addressLines: string[] = [];
+  let isEnglishBlock = false;
+  let fatherName: string | undefined;
+  let issueAuthority: string | undefined;
 
-  const gender = text.includes("male")
-    ? "Male"
-    : text.includes("female")
-    ? "Female"
-    : text.includes("transgender")
-    ? "Transgender"
-    : "";
+  for (const line of lines) {
+    const fatherMatch = line.match(/S\/O\s*:\s*(.*)/i);
+    if (fatherMatch) {
+      fatherName = fatherMatch[1].split(",")[0].trim();
+    }
+    if (line.includes("Address:")) {
+      isEnglishBlock = true;
+      continue;
+    }
 
-  const dob = extractValueAfterKeyword(text, [
-    "dob",
-    "date of birth",
-    "year of birth",
-  ]);
+    if (/Unique Identification Authority of India/i.test(line)) {
+      issueAuthority = "Unique Identification Authority of India";
+    }
 
-  const fatherOrHusbandName = extractValueAfterKeyword(text, [
-    "s/o",
-    "d/o",
-    "w/o",
-    "son of",
-    "daughter of",
-    "wife of",
-    "c/o",
-  ]);
+    if (isEnglishBlock) {
+      if (
+        /^\d{4}\s\d{4}\s\d{4}$/.test(line) ||
+        line.includes("@") ||
+        line.includes("www")
+      )
+        break;
+      if (/^[A-Za-z0-9\s,.-]+$/.test(line)) {
+        addressLines.push(line);
+      }
+    }
+  }
+  const address = addressLines.join(" ");
 
-  const nameMatch = text.match(/(?:name\s*[:\-\s]*)([a-z\s]{2,40})|([a-z\s]{2,40})\s*(male|female|transgender)/i);
-  const name = nameMatch
-    ? (nameMatch[1] || nameMatch[2]).trim()
-    : extractValueAfterKeyword(text, ["name", "naam"]);
+  const pincodeMatch = address.match(/\b\d{6}\b/);
+  const pincode = pincodeMatch ? pincodeMatch[0] : undefined;
 
-  return { aadhaarNumber, name, gender, dob, fatherOrHusbandName, rawText };
-}
-
-export function extractBackDetails(rawText: string) {
-  const text = normalizeOCRText(rawText);
-
-  const careOf = extractValueAfterKeyword(text, ["c/o", "care of", "s/o"]);
-  const house = extractValueAfterKeyword(text, [
-    "house",
-    "h.no",
-    "house no",
-    "flat",
-    "no",
-  ]);
-  const street = extractValueAfterKeyword(text, ["street", "road", "rd", "lane"]);
-  const landmark = extractValueAfterKeyword(text, ["landmark", "near", "opposite", "beside"]);
-  const locality = extractValueAfterKeyword(text, ["locality", "area", "colony", "nagar"]);
-  const vtc = extractValueAfterKeyword(text, [
-    "village/town/city",
-    "village",
-    "town",
-    "city",
-    "vtc",
-  ]);
-  const po = extractValueAfterKeyword(text, [
-    "post office",
-    "po",
-    "post",
-    "p.o",
-  ]);
-  const district = extractValueAfterKeyword(text, ["district", "dist"]);
-  const state = extractValueAfterKeyword(text, ["state", "st", "maharashtra"]);
-  const pincode = extractValueAfterKeyword(text, [
-    "pin",
-    "pincode",
-    "postal code",
-    "zip",
-  ]);
-
-  // Combine address components into a single string, filtering out empty values
-  const addressComponents = [
-    careOf,
-    house,
-    street,
-    landmark,
-    locality,
-    vtc,
-    po,
-    district,
-    state,
+  return {
+    address,
     pincode,
-  ].filter((component) => component); // Remove empty components
-
-  // Join with commas and ensure no double commas
-  const address = addressComponents.join(", ").replace(/,\s*,/g, ",").trim();
-
-  return { address, rawText };
+    fatherName,
+    issueAuthority,
+  };
 }

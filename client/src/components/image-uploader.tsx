@@ -13,9 +13,11 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload, X, ImageIcon } from "lucide-react";
+import { toast } from "sonner";
 // import Image from "next/image"
 
 interface ImageUploaderProps {
+  darkMode: boolean;
   title: string;
   description: string;
   onImageUpload: (imageUrl: string, file: File | null) => void;
@@ -23,6 +25,7 @@ interface ImageUploaderProps {
 }
 
 export default function ImageUploader({
+  darkMode,
   title,
   description,
   onImageUpload,
@@ -58,7 +61,7 @@ export default function ImageUploader({
 
   const handleFile = (file: File) => {
     if (!file.type.match("image.*")) {
-      alert("Please upload an image file");
+      toast.warning("Please upload an image file");
       return;
     }
 
@@ -83,10 +86,14 @@ export default function ImageUploader({
 
   return (
     <Card
-      className={`border-2 ${isDragging ? "border-primary border-dashed" : ""}`}
+      className={`border-2 ${
+        isDragging
+          ? "border-primary border-dashed bg-gray-400"
+          : "bg-gray-900 border-gray-800"
+      }`}
     >
       <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardTitle className="text-lg text-white">{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
@@ -100,7 +107,11 @@ export default function ImageUploader({
 
         {!currentImage ? (
           <div
-            className="flex flex-col items-center justify-center h-48 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/80 transition-colors"
+            className={`flex flex-col items-center justify-center h-48 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/80 transition-colors ${
+              darkMode
+                ? "border-gray-700 bg-gray-800"
+                : "border-gray-300 bg-gray-50"
+            }`}
             onClick={triggerFileInput}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -128,21 +139,20 @@ export default function ImageUploader({
           //   </Button>
           // </div>
           <div className="relative h-48 w-full overflow-hidden rounded-lg">
-  <img
-    src={currentImage || "/placeholder.svg"}
-    alt={`${title} of Aadhaar card`}
-    className="object-contain h-full w-full rounded-lg"
-  />
-  <Button
-    variant="destructive"
-    size="icon"
-    className="absolute top-2 right-2 h-8 w-8"
-    onClick={handleRemoveImage}
-  >
-    <X className="h-4 w-4" />
-  </Button>
-</div>
-
+            <img
+              src={currentImage || "/placeholder.svg"}
+              alt={`${title} of Aadhaar card`}
+              className="object-contain h-full w-full rounded-lg"
+            />
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute top-2 right-2 h-8 w-8"
+              onClick={handleRemoveImage}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         )}
       </CardContent>
       <CardFooter className="flex justify-center">
