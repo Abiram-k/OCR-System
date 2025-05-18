@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import { proccessAdharDetails } from "../controllers/ocr.controller";
+import { proccessAdharDetails } from "../controllers/ocr.controller.js";
 
 const router = Router();
 

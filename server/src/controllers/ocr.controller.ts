@@ -1,8 +1,8 @@
 import vision from "@google-cloud/vision";
 import { Request, Response } from "express";
 import { config } from "dotenv";
-import { parseBackText, parseFrontText } from "../utils/extractDetails";
-import { isValidAadhaarOCRText } from "../utils/isValidAadhaarOCRText";
+import { parseBackText, parseFrontText } from "../utils/extractDetails.js";
+import { isValidAadhaarOCRText } from "../utils/isValidAadhaarOCRText.js";
 config();
 
 const client = new vision.ImageAnnotatorClient();
